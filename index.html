@@ -2,100 +2,168 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mini Roblox</title>
+<title>Mini Photoshop Profissional</title>
 <style>
-    body {
-        margin: 0;
-        font-family: Arial, sans-serif;
-        background: #cce0ff;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-    }
-    #loginScreen, #gameScreen {
-        display: none;
-        text-align: center;
-        margin-top: 50px;
-    }
-    #loginScreen.active, #gameScreen.active {
-        display: block;
-    }
-    #avatar {
-        width: 50px;
-        height: 50px;
-        background: red;
-        position: absolute;
-        top: 200px;
-        left: 200px;
-        border-radius: 10px;
-    }
-    #world {
-        width: 800px;
-        height: 400px;
-        background: #99cc99;
-        position: relative;
-        margin-top: 20px;
-        overflow: hidden;
-        border: 2px solid #333;
-    }
-    button {
-        padding: 10px 20px;
-        margin: 10px;
-        cursor: pointer;
-    }
+body { margin:0; font-family:sans-serif; background:#1e1e1e; color:white; display:flex; flex-direction:column; align-items:center; }
+h1 { margin:10px 0; }
+#toolbar { display:flex; flex-wrap:wrap; background:#333; padding:10px; gap:5px; border-bottom:2px solid #555; }
+button, input { padding:5px; margin:2px; cursor:pointer; }
+canvas { border:2px solid #555; margin-top:10px; background:white; cursor:crosshair; }
+#container { display:flex; width:100%; justify-content:center; margin-top:10px; gap:10px; }
+#layers { width:200px; background:#2a2a2a; padding:10px; display:flex; flex-direction:column; gap:5px; max-height:600px; overflow:auto; }
+.layer { display:flex; align-items:center; justify-content:space-between; padding:3px; background:#444; cursor:pointer; }
+.layer.active { background:#666; }
+.layer span { flex:1; }
+#canvasContainer { position:relative; }
 </style>
 </head>
 <body>
+<h1>Mini Photoshop Profissional</h1>
 
-<div id="loginScreen" class="active">
-    <h1>Mini Roblox</h1>
-    <input type="text" id="username" placeholder="Digite seu nome"><br>
-    <button onclick="login()">Entrar</button>
+<div id="toolbar">
+<button id="pencil">✏️ Pincel</button>
+<button id="eraser">🩹 Borracha</button>
+<button id="fill">🎨 Preencher</button>
+<button id="select">⬛ Selecionar</button>
+<input type="color" id="colorPicker" value="#ff0000">
+<input type="range" id="brushSize" min="1" max="50" value="5">
+<button id="undo">↩️ Desfazer</button>
+<button id="redo">↪️ Refazer</button>
+<button id="addLayer">➕ Nova Camada</button>
+<button id="save">💾 Salvar</button>
+<input type="file" id="upload" accept="image/*">
 </div>
 
-<div id="gameScreen">
-    <h2>Bem-vindo, <span id="playerName"></span>!</h2>
-    <div id="world">
-        <div id="avatar"></div>
-    </div>
-    <button onclick="move('up')">↑</button>
-    <button onclick="move('down')">↓</button>
-    <button onclick="move('left')">←</button>
-    <button onclick="move('right')">→</button>
+<div id="container">
+<div id="layers"></div>
+<div id="canvasContainer">
+<canvas id="canvas" width="800" height="600"></canvas>
+</div>
 </div>
 
 <script>
-let avatar = document.getElementById('avatar');
-let playerName = document.getElementById('playerName');
+const canvas=document.getElementById('canvas');
+const ctx=canvas.getContext('2d');
+const layersDiv=document.getElementById('layers');
 
-function login() {
-    const username = document.getElementById('username').value;
-    if(username.trim() === "") { alert("Digite um nome!"); return; }
-    playerName.textContent = username;
-    document.getElementById('loginScreen').classList.remove('active');
-    document.getElementById('gameScreen').classList.add('active');
+let layers=[];
+let currentLayer=null;
+let painting=false;
+let tool='pencil';
+let brushColor='#ff0000';
+let brushSize=5;
+let undoStack=[];
+let redoStack=[];
+
+// CAMADAS
+function addLayer(name='Layer'){
+  const layer=document.createElement('canvas');
+  layer.width=canvas.width;
+  layer.height=canvas.height;
+  layers.push(layer);
+  currentLayer=layer;
+
+  const div=document.createElement('div');
+  div.className='layer active';
+  div.innerHTML=`<span>${name}</span><button>X</button>`;
+  layersDiv.appendChild(div);
+  updateLayerSelection();
+
+  // eventos
+  div.onclick=()=>{
+    currentLayer=layer;
+    document.querySelectorAll('.layer').forEach(l=>l.classList.remove('active'));
+    div.classList.add('active');
+  };
+  div.querySelector('button').onclick=(e)=>{
+    e.stopPropagation();
+    layers.splice(layers.indexOf(layer),1);
+    layersDiv.removeChild(div);
+    currentLayer=layers[layers.length-1]||null;
+    drawLayers();
+  };
+
+  drawLayers();
 }
 
-function move(direction) {
-    let top = parseInt(avatar.style.top);
-    let left = parseInt(avatar.style.left);
-
-    if(direction === 'up') top -= 10;
-    if(direction === 'down') top += 10;
-    if(direction === 'left') left -= 10;
-    if(direction === 'right') left += 10;
-
-    // Limites do mundo
-    if(top < 0) top = 0;
-    if(top > 350) top = 350;
-    if(left < 0) left = 0;
-    if(left > 750) left = 750;
-
-    avatar.style.top = top + 'px';
-    avatar.style.left = left + 'px';
+function drawLayers(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  layers.forEach(l=>ctx.drawImage(l,0,0));
 }
+
+function updateLayerSelection(){
+  document.querySelectorAll('.layer').forEach((div,i)=>{
+    div.classList.toggle('active', layers[i]===currentLayer);
+  });
+}
+
+// DESENHO
+function startDraw(e){ painting=true; draw(e); }
+function endDraw(){ painting=false; if(currentLayer){saveState();} ctx.beginPath();}
+function draw(e){
+  if(!painting || !currentLayer) return;
+  const lctx=currentLayer.getContext('2d');
+  lctx.lineWidth=brushSize;
+  lctx.lineCap='round';
+  lctx.strokeStyle=tool==='eraser'?'rgba(0,0,0,1)':brushColor;
+  lctx.globalCompositeOperation = tool==='eraser'?'destination-out':'source-over';
+
+  lctx.lineTo(e.offsetX,e.offsetY);
+  lctx.stroke();
+  lctx.beginPath();
+  lctx.moveTo(e.offsetX,e.offsetY);
+
+  drawLayers();
+}
+
+canvas.addEventListener('mousedown', startDraw);
+canvas.addEventListener('mouseup', endDraw);
+canvas.addEventListener('mousemove', draw);
+
+// CONTROLES
+document.getElementById('colorPicker').addEventListener('change', e=>{brushColor=e.target.value; tool='pencil';});
+document.getElementById('brushSize').addEventListener('input', e=>{brushSize=e.target.value;});
+document.getElementById('pencil').onclick=()=>tool='pencil';
+document.getElementById('eraser').onclick=()=>tool='eraser';
+document.getElementById('fill').onclick=()=>tool='fill';
+document.getElementById('select').onclick=()=>tool='select';
+document.getElementById('addLayer').onclick=()=>addLayer('Layer '+(layers.length+1));
+
+// UNDO / REDO
+function saveState(){ undoStack.push(canvas.toDataURL()); if(undoStack.length>50) undoStack.shift(); redoStack=[]; }
+document.getElementById('undo').onclick=()=>{
+  if(undoStack.length>0){ redoStack.push(canvas.toDataURL());
+    const img=new Image(); img.src=undoStack.pop(); img.onload=()=>ctx.drawImage(img,0,0);
+  }
+}
+document.getElementById('redo').onclick=()=>{
+  if(redoStack.length>0){ undoStack.push(canvas.toDataURL());
+    const img=new Image(); img.src=redoStack.pop(); img.onload=()=>ctx.drawImage(img,0,0);
+  }
+}
+
+// UPLOAD
+document.getElementById('upload').addEventListener('change', e=>{
+  const file=e.target.files[0];
+  const reader=new FileReader();
+  reader.onload=function(event){
+    const img=new Image();
+    img.onload=function(){ if(currentLayer) currentLayer.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height); drawLayers(); saveState();}
+    img.src=event.target.result;
+  }
+  if(file) reader.readAsDataURL(file);
+});
+
+// SALVAR
+document.getElementById('save').onclick=()=>{
+  const link=document.createElement('a');
+  link.download='miniphotoshop.png';
+  link.href=canvas.toDataURL();
+  link.click();
+}
+
+// INICIALIZAÇÃO
+addLayer('Fundo');
 </script>
-
 </body>
 </html>
