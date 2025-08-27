@@ -2,97 +2,111 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Mini Photoshop Avançado</title>
+<title>Mini Photoshop Profissional</title>
 <style>
-  body { margin: 0; font-family: sans-serif; background: #222; color: white; display: flex; flex-direction: column; align-items: center; }
-  #toolbar { display: flex; flex-wrap: wrap; background: #333; padding: 10px; gap: 5px; }
-  button, input { padding: 5px; margin: 2px; }
-  canvas { border: 2px solid #fff; margin-top: 10px; cursor: crosshair; }
-  #layers { margin-top: 10px; background: #333; padding: 5px; display: flex; flex-direction: column; gap: 3px; }
-  .layer { display: flex; align-items: center; gap: 5px; }
-  .layer button { padding: 2px 5px; font-size: 12px; }
+body { margin:0; font-family:sans-serif; background:#1e1e1e; color:white; display:flex; flex-direction:column; align-items:center; }
+h1 { margin:10px 0; }
+#toolbar { display:flex; flex-wrap:wrap; background:#333; padding:10px; gap:5px; border-bottom:2px solid #555; }
+button, input { padding:5px; margin:2px; cursor:pointer; }
+canvas { border:2px solid #555; margin-top:10px; background:white; cursor:crosshair; }
+#container { display:flex; width:100%; justify-content:center; margin-top:10px; gap:10px; }
+#layers { width:200px; background:#2a2a2a; padding:10px; display:flex; flex-direction:column; gap:5px; max-height:600px; overflow:auto; }
+.layer { display:flex; align-items:center; justify-content:space-between; padding:3px; background:#444; cursor:pointer; }
+.layer.active { background:#666; }
+.layer span { flex:1; }
+#canvasContainer { position:relative; }
 </style>
 </head>
 <body>
-<h1>Mini Photoshop Avançado</h1>
+<h1>Mini Photoshop Profissional</h1>
 
 <div id="toolbar">
-  <button id="pencil">Pincel</button>
-  <button id="eraser">Borracha</button>
-  <button id="fill">Preencher</button>
-  <button id="select">Selecionar</button>
-  <input type="color" id="colorPicker" value="#ff0000">
-  <input type="range" id="brushSize" min="1" max="50" value="5">
-  <button id="undo">Desfazer</button>
-  <button id="redo">Refazer</button>
-  <button id="addLayer">Nova Camada</button>
-  <button id="save">Salvar</button>
-  <input type="file" id="upload" accept="image/*">
+<button id="pencil">✏️ Pincel</button>
+<button id="eraser">🩹 Borracha</button>
+<button id="fill">🎨 Preencher</button>
+<button id="select">⬛ Selecionar</button>
+<input type="color" id="colorPicker" value="#ff0000">
+<input type="range" id="brushSize" min="1" max="50" value="5">
+<button id="undo">↩️ Desfazer</button>
+<button id="redo">↪️ Refazer</button>
+<button id="addLayer">➕ Nova Camada</button>
+<button id="save">💾 Salvar</button>
+<input type="file" id="upload" accept="image/*">
 </div>
 
+<div id="container">
 <div id="layers"></div>
-
+<div id="canvasContainer">
 <canvas id="canvas" width="800" height="600"></canvas>
+</div>
+</div>
 
 <script>
-const canvas = document.getElementById('canvas');
-const ctx = canvas.getContext('2d');
-const layersDiv = document.getElementById('layers');
+const canvas=document.getElementById('canvas');
+const ctx=canvas.getContext('2d');
+const layersDiv=document.getElementById('layers');
 
-let layers = [];
-let currentLayer = null;
-let painting = false;
-let tool = 'pencil';
-let brushColor = '#ff0000';
-let brushSize = 5;
-let undoStack = [];
-let redoStack = [];
-let selection = null;
+let layers=[];
+let currentLayer=null;
+let painting=false;
+let tool='pencil';
+let brushColor='#ff0000';
+let brushSize=5;
+let undoStack=[];
+let redoStack=[];
 
-// Criar camada
-function addLayer(name = 'Layer') {
-  const layer = document.createElement('canvas');
-  layer.width = canvas.width;
-  layer.height = canvas.height;
+// CAMADAS
+function addLayer(name='Layer'){
+  const layer=document.createElement('canvas');
+  layer.width=canvas.width;
+  layer.height=canvas.height;
   layers.push(layer);
-  currentLayer = layer;
+  currentLayer=layer;
 
-  const div = document.createElement('div');
-  div.className = 'layer';
-  div.innerHTML = `<span>${name}</span>`;
-  const upBtn = document.createElement('button'); upBtn.textContent = '↑';
-  const downBtn = document.createElement('button'); downBtn.textContent = '↓';
-  const delBtn = document.createElement('button'); delBtn.textContent = 'X';
-  div.appendChild(upBtn); div.appendChild(downBtn); div.appendChild(delBtn);
-
+  const div=document.createElement('div');
+  div.className='layer active';
+  div.innerHTML=`<span>${name}</span><button>X</button>`;
   layersDiv.appendChild(div);
+  updateLayerSelection();
 
-  // Eventos de camada
-  upBtn.onclick = () => { let i = layers.indexOf(layer); if(i>0){layers[i]=layers[i-1]; layers[i-1]=layer; layersDiv.insertBefore(div,layersDiv.children[i-1]); drawLayers();} }
-  downBtn.onclick = () => { let i = layers.indexOf(layer); if(i<layers.length-1){layers[i]=layers[i+1]; layers[i+1]=layer; layersDiv.insertBefore(div,layersDiv.children[i+2]||null); drawLayers();} }
-  delBtn.onclick = () => { let i = layers.indexOf(layer); layers.splice(i,1); layersDiv.removeChild(div); currentLayer = layers[layers.length-1]||null; drawLayers(); }
+  // eventos
+  div.onclick=()=>{
+    currentLayer=layer;
+    document.querySelectorAll('.layer').forEach(l=>l.classList.remove('active'));
+    div.classList.add('active');
+  };
+  div.querySelector('button').onclick=(e)=>{
+    e.stopPropagation();
+    layers.splice(layers.indexOf(layer),1);
+    layersDiv.removeChild(div);
+    currentLayer=layers[layers.length-1]||null;
+    drawLayers();
+  };
 
   drawLayers();
 }
 
-function drawLayers() {
+function drawLayers(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
-  for(let l of layers) ctx.drawImage(l,0,0);
+  layers.forEach(l=>ctx.drawImage(l,0,0));
 }
 
-// Desenho
+function updateLayerSelection(){
+  document.querySelectorAll('.layer').forEach((div,i)=>{
+    div.classList.toggle('active', layers[i]===currentLayer);
+  });
+}
+
+// DESENHO
 function startDraw(e){ painting=true; draw(e); }
-function endDraw(){ painting=false; ctx.beginPath(); saveState(); }
+function endDraw(){ painting=false; if(currentLayer){saveState();} ctx.beginPath();}
 function draw(e){
   if(!painting || !currentLayer) return;
-  const lctx = currentLayer.getContext('2d');
+  const lctx=currentLayer.getContext('2d');
   lctx.lineWidth=brushSize;
   lctx.lineCap='round';
-  if(tool==='pencil'){ lctx.strokeStyle=brushColor; }
-  else if(tool==='eraser'){ lctx.strokeStyle='rgba(0,0,0,1)'; lctx.globalCompositeOperation='destination-out'; }
-  else if(tool==='fill'){ fillColor(e.offsetX,e.offsetY); painting=false; saveState(); return; }
-
-  if(tool==='select'){ selection={x:e.offsetX, y:e.offsetY}; return; }
+  lctx.strokeStyle=tool==='eraser'?'rgba(0,0,0,1)':brushColor;
+  lctx.globalCompositeOperation = tool==='eraser'?'destination-out':'source-over';
 
   lctx.lineTo(e.offsetX,e.offsetY);
   lctx.stroke();
@@ -106,7 +120,7 @@ canvas.addEventListener('mousedown', startDraw);
 canvas.addEventListener('mouseup', endDraw);
 canvas.addEventListener('mousemove', draw);
 
-// Controles
+// CONTROLES
 document.getElementById('colorPicker').addEventListener('change', e=>{brushColor=e.target.value; tool='pencil';});
 document.getElementById('brushSize').addEventListener('input', e=>{brushSize=e.target.value;});
 document.getElementById('pencil').onclick=()=>tool='pencil';
@@ -115,57 +129,40 @@ document.getElementById('fill').onclick=()=>tool='fill';
 document.getElementById('select').onclick=()=>tool='select';
 document.getElementById('addLayer').onclick=()=>addLayer('Layer '+(layers.length+1));
 
-// Undo/Redo
+// UNDO / REDO
 function saveState(){ undoStack.push(canvas.toDataURL()); if(undoStack.length>50) undoStack.shift(); redoStack=[]; }
-document.getElementById('undo').onclick=()=>{ if(undoStack.length>0){ redoStack.push(canvas.toDataURL()); const img=new Image(); img.src=undoStack.pop(); img.onload=()=>{ ctx.clearRect(0,0,canvas.width,canvas.height); ctx.drawImage(img,0,0); } } }
-document.getElementById('redo').onclick=()=>{ if(redoStack.length>0){ undoStack.push(canvas.toDataURL()); const img=new Image(); img.src=redoStack.pop(); img.onload=()=>{ ctx.clearRect(0,0,canvas.width,canvas.height); ctx.drawImage(img,0,0); } } }
+document.getElementById('undo').onclick=()=>{
+  if(undoStack.length>0){ redoStack.push(canvas.toDataURL());
+    const img=new Image(); img.src=undoStack.pop(); img.onload=()=>ctx.drawImage(img,0,0);
+  }
+}
+document.getElementById('redo').onclick=()=>{
+  if(redoStack.length>0){ undoStack.push(canvas.toDataURL());
+    const img=new Image(); img.src=redoStack.pop(); img.onload=()=>ctx.drawImage(img,0,0);
+  }
+}
 
-// Upload
+// UPLOAD
 document.getElementById('upload').addEventListener('change', e=>{
   const file=e.target.files[0];
   const reader=new FileReader();
   reader.onload=function(event){
     const img=new Image();
-    img.onload=function(){ if(currentLayer) currentLayer.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height); drawLayers(); saveState(); }
+    img.onload=function(){ if(currentLayer) currentLayer.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height); drawLayers(); saveState();}
     img.src=event.target.result;
   }
   if(file) reader.readAsDataURL(file);
 });
 
-// Save
-document.getElementById('save').onclick=()=>{ const link=document.createElement('a'); link.download='miniphotoshop.png'; link.href=canvas.toDataURL(); link.click(); }
-
-// Preenchimento (simples)
-function fillColor(x,y){
-  if(!currentLayer) return;
-  const lctx=currentLayer.getContext('2d');
-  const imgData=lctx.getImageData(0,0,currentLayer.width,currentLayer.height);
-  const targetPos=(y*currentLayer.width+x)*4;
-  const r=imgData.data[targetPos], g=imgData.data[targetPos+1], b=imgData.data[targetPos+2], a=imgData.data[targetPos+3];
-  floodFill(imgData,x,y,[r,g,b,a],hexToRgb(brushColor));
-  lctx.putImageData(imgData,0,0);
-  drawLayers();
+// SALVAR
+document.getElementById('save').onclick=()=>{
+  const link=document.createElement('a');
+  link.download='miniphotoshop.png';
+  link.href=canvas.toDataURL();
+  link.click();
 }
 
-function floodFill(imgData,x,y,targetColor,fillColor){
-  const stack=[[x,y]]; const w=imgData.width; const h=imgData.height;
-  while(stack.length>0){
-    const [nx,ny]=stack.pop();
-    const pos=(ny*w+nx)*4;
-    if(nx<0||ny<0||nx>=w||ny>=h) continue;
-    if(imgData.data[pos]===targetColor[0] && imgData.data[pos+1]===targetColor[1] && imgData.data[pos+2]===targetColor[2] && imgData.data[pos+3]===targetColor[3]){
-      imgData.data[pos]=fillColor[0]; imgData.data[pos+1]=fillColor[1]; imgData.data[pos+2]=fillColor[2]; imgData.data[pos+3]=255;
-      stack.push([nx+1,ny],[nx-1,ny],[nx,ny+1],[nx,ny-1]);
-    }
-  }
-}
-
-function hexToRgb(hex){
-  const bigint=parseInt(hex.slice(1),16);
-  return [(bigint>>16)&255,(bigint>>8)&255, bigint&255];
-}
-
-// Inicializar
+// INICIALIZAÇÃO
 addLayer('Fundo');
 </script>
 </body>
