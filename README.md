@@ -2,60 +2,53 @@
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8">
-  <title>Meu Site Básico</title>
+  <title>Chat Simples</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      text-align: center;
-      background-color: #f0f0f0;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
       margin: 0;
-      padding: 0;
+      background: #f4f4f4;
     }
-
     header {
-      background-color: #4CAF50;
+      background: #4CAF50;
       color: white;
-      padding: 20px;
-    }
-
-    main {
-      padding: 40px;
-    }
-
-    button {
-      background-color: #4CAF50;
-      color: white;
-      padding: 10px 20px;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      font-size: 16px;
-    }
-
-    button:hover {
-      background-color: #45a049;
-    }
-
-    footer {
-      margin-top: 50px;
-      background-color: #333;
-      color: white;
+      text-align: center;
       padding: 10px;
+    }
+    #chat {
+      flex: 1;
+      padding: 10px;
+      overflow-y: auto;
+      background: white;
+      border: 1px solid #ccc;
+      margin: 10px;
+    }
+    #form {
+      display: flex;
+      padding: 10px;
+      background: #ddd;
+    }
+    #msg {
+      flex: 1;
+      padding: 8px;
+      font-size: 14px;
+    }
+    button {
+      padding: 8px 15px;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #45a049;
     }
   </style>
 </head>
 <body>
-  <header>
-    <h1>Bem-vindo ao meu site!</h1>
-  </header>
-
-  <main>
-    <p>Esse é um site simples feito em HTML + CSS 🚀</p>
-    <button onclick="alert('Você clicou no botão!')">Clique aqui</button>
-  </main>
-
-  <footer>
-    <p>Feito por mim 😎</p>
-  </footer>
-</body>
-</html>
+  <header><h2>💬 Chat Simples</h2></header>
+  
+  <div
